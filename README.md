@@ -10,6 +10,6 @@ const KASPA_WALLET_ADDRESS = 'YOUR_KASPA_ADDRESS';
 const KAS_GOAL = YOUR_GOAL_NUMBER_ONLY;  
 ```
 
-
-#### And yes, this project was entirely built with AI🤖
+## Note
+Yes.. this project was entirely built with AI🤖
 If you find any mistakes or would like to add new features, feel free to open a Pull Request.
