@@ -11,5 +11,6 @@ const KAS_GOAL = YOUR_GOAL_NUMBER_ONLY;
 ```
 
 ## Note
-Yes.. this project was entirely built with AI🤖
+Yes.. this project was entirely built with AI🤖.
+
 If you find any mistakes or would like to add new features, feel free to open a Pull Request.
