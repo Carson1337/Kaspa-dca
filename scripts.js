@@ -4,7 +4,7 @@ let HOLDINGS_KAS = 21.20; // This will be updated from API
 const KAS_GOAL = 100000;
 
 // Extract wallet address from the HTML link
-const KASPA_WALLET_ADDRESS = 'kaspa:qrlzwv7s4qfj8hfpks0ysvnaqevv06dgyu0dlyv5ez0qepnky93hxtqrhakfa';
+const KASPA_WALLET_ADDRESS = 'kaspa:qypqn40xz56apfhc3rf26u8gg0r36n2jzjs0gezyz9ujsnxxc9au8sgd78njpg7';
 
 function getTaipeiDate() {
   // 確保現在是台北時區的今天
@@ -115,3 +115,4 @@ setInterval(updateBalanceAndPage, 30 * 60 * 1000);
 // Also update the display every hour for day counter
 
 setInterval(updatePage, 1000 * 60 * 60);
+
