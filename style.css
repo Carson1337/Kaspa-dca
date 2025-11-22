@@ -228,28 +228,29 @@ body {
   padding: 10px;
 }
 
-/* --- 底部按鈕 (等寬置中) --- */
+/* --- 底部按鈕 (等寬置中) - 修正 Z-index 確保可點擊 --- */
 .links-container {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 16px;             /* 按鈕之間的縫隙 */
+  gap: 16px;             
   width: 100%;
   margin-top: 24px;
+  position: relative;    /* 建立新的堆疊上下文 */
+  z-index: 10;           /* 確保在一般元素之上 */
 }
 
 .kaspa-pool {
-  flex: 1;               /* 強制等寬 */
+  flex: 1;               
   background-color: #353843;
   color: #ffffff;
-  padding: 12px 0;       /* 上下高度 */
-  border-radius: 50px;   /* 膠囊形狀 */
+  padding: 12px 0;
+  border-radius: 50px;
   text-decoration: none;
   font-size: 14px;
   font-weight: bold;
   letter-spacing: 1px;
   
-  /* 內容置中 */
   display: flex;
   justify-content: center;
   align-items: center;
@@ -257,6 +258,9 @@ body {
   border: 1px solid #464a55;
   box-shadow: 0 4px 10px rgba(0,0,0,0.2);
   transition: all 0.2s ease;
+
+  position: relative;    /* 修正點擊問題的關鍵設定 */
+  z-index: 20;           /* 讓按鈕在最上層 */
 }
 
 .kaspa-pool:hover {
