@@ -1,13 +1,12 @@
-
 const START_DATE = '2025-09-01';
-let HOLDINGS_KAS = 21.20; // This will be updated from API
+let HOLDINGS_KAS = 21.20; 
 const KAS_GOAL = 100000;
-
-// Extract wallet address from the HTML link
 const KASPA_WALLET_ADDRESS = 'kaspa:qypqn40xz56apfhc3rf26u8gg0r36n2jzjs0gezyz9ujsnxxc9au8sgd78njpg7';
 
+// --- 設定：只顯示這個日期之後的紀錄 (2025-11-01) ---
+const SHOW_HISTORY_FROM = new Date('2025-11-01T00:00:00').getTime();
+
 function getTaipeiDate() {
-  // 確保現在是台北時區的今天
   const now = new Date();
   const utc8 = new Date(now.getTime() + (8 * 60 * 60 * 1000));
   return new Date(utc8.getUTCFullYear(), utc8.getUTCMonth(), utc8.getUTCDate());
@@ -20,99 +19,154 @@ function getDaysSince(startDateStr) {
   return Math.floor(diff / (1000 * 60 * 60 * 24)) + 1;
 }
 
+// 格式化時間 (月/日 時:分)
+function formatTime(timestamp) {
+  const date = new Date(timestamp);
+  const month = (date.getMonth() + 1).toString().padStart(2, '0');
+  const day = date.getDate().toString().padStart(2, '0');
+  const hours = date.getHours().toString().padStart(2, '0');
+  const minutes = date.getMinutes().toString().padStart(2, '0');
+  return `${month}/${day} ${hours}:${minutes}`;
+}
+
+// 查詢餘額
 async function fetchKaspaBalance() {
   try {
     console.log('Fetching Kaspa balance...');
-    
-    // Use the full kaspa: address as required by the API
     const apiUrl = `https://api.kaspa.org/addresses/${KASPA_WALLET_ADDRESS}/balance`;
     
-    const response = await fetch(apiUrl, {
-      method: 'GET',
-      headers: {
-        'Accept': 'application/json',
-      }
-    });
-    
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
+    const response = await fetch(apiUrl);
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
     
     const data = await response.json();
-    
-    // Convert from sompi to KAS (1 KAS = 100,000,000 sompi)
     const balanceInKas = data.balance / 100000000;
     
-    console.log('Balance updated:', balanceInKas, 'KAS');
+    console.log('Balance updated:', balanceInKas);
     HOLDINGS_KAS = balanceInKas;
-    
     return balanceInKas;
     
   } catch (error) {
     console.error('Error fetching balance:', error);
-    
-    // Fallback: try alternative endpoints
-    const fallbackApis = [
-      // Try with different API patterns
-      `https://explorer.kaspa.org/api/addresses/${KASPA_WALLET_ADDRESS}/balance`,
-      `https://api.kaspa.org/info/balance?address=${KASPA_WALLET_ADDRESS}`,
-      `https://api.kaspa.org/balance/${KASPA_WALLET_ADDRESS}`,
-    ];
-    
-    for (let i = 0; i < fallbackApis.length; i++) {
-      try {
-        console.log(`Trying fallback API ${i + 1}: ${fallbackApis[i]}`);
-        const fallbackResponse = await fetch(fallbackApis[i]);
-        if (fallbackResponse.ok) {
-          const fallbackData = await fallbackResponse.json();
-          console.log('Fallback response:', fallbackData);
-          
-          // Try different response formats
-          let balanceInSompi = fallbackData.balance || fallbackData.confirmed_balance || fallbackData.total_balance;
-          
-          if (balanceInSompi !== undefined) {
-            const balanceInKas = balanceInSompi / 100000000;
-            console.log(`Balance updated via fallback ${i + 1}:`, balanceInKas, 'KAS');
-            HOLDINGS_KAS = balanceInKas;
-            return balanceInKas;
-          }
-        }
-      } catch (fallbackError) {
-        console.error(`Fallback API ${i + 1} failed:`, fallbackError);
-      }
-    }
-    
-    // If all APIs fail, keep the current balance and show a warning
-    console.warn('All API attempts failed, using cached balance:', HOLDINGS_KAS, 'KAS');
-    console.warn('Consider manually updating the balance or checking API endpoints');
     return HOLDINGS_KAS;
   }
 }
 
+// 查詢並顯示歷史紀錄
+async function fetchKaspaHistory() {
+  const listElement = document.getElementById('historyList');
+  if (!listElement) return;
+
+  try {
+    console.log('Fetching history...');
+    // 取得最近 50 筆完整交易資訊
+    const apiUrl = `https://api.kaspa.org/addresses/${KASPA_WALLET_ADDRESS}/full-transactions?limit=50`;
+    const response = await fetch(apiUrl);
+    
+    if (!response.ok) throw new Error('API Error');
+    const data = await response.json();
+
+    const deposits = [];
+
+    for (const tx of data) {
+      // 1. 時間過濾：如果這筆交易早於 2025/11/01，直接跳過
+      if (tx.block_time < SHOW_HISTORY_FROM) {
+        continue;
+      }
+
+      let inputAmount = 0;
+      let outputAmount = 0;
+
+      // 計算這筆交易中，我付出的金額
+      if (tx.inputs) {
+        for (const input of tx.inputs) {
+          if (input.previous_outpoint_address === KASPA_WALLET_ADDRESS) {
+            inputAmount += input.previous_outpoint_amount;
+          }
+        }
+      }
+
+      // 計算這筆交易中，我收到的金額
+      if (tx.outputs) {
+        for (const output of tx.outputs) {
+          if (output.script_public_key_address === KASPA_WALLET_ADDRESS) {
+            outputAmount += output.amount;
+          }
+        }
+      }
+
+      // 淨變化量
+      const netChangeSompi = outputAmount - inputAmount;
+      const netKas = netChangeSompi / 100000000;
+
+      // 只顯示收入 (大於 0.01 KAS)
+      if (netKas > 0.01) {
+         deposits.push({
+           time: tx.block_time,
+           amount: netKas
+         });
+      }
+    }
+
+    if (deposits.length === 0) {
+      // 為了怕使用者以為壞掉，如果過濾完沒東西，提示一下
+      listElement.innerHTML = '<div class="history-loading">11月後尚無存入紀錄</div>';
+      return;
+    }
+
+    // 生成 HTML
+    let historyHtml = '';
+    deposits.forEach(record => {
+      historyHtml += `
+        <div class="history-item">
+          <span class="history-date">${formatTime(record.time)}</span>
+          <span class="history-amount">+ ${record.amount.toFixed(2)} KAS</span>
+        </div>
+      `;
+    });
+
+    listElement.innerHTML = historyHtml;
+
+  } catch (error) {
+    console.error('Error fetching history:', error);
+    listElement.innerHTML = '<div class="history-loading">讀取失敗</div>';
+  }
+}
+
 function updatePage() {
+  // 更新天數
   document.getElementById('dayText').textContent = "DAY " + getDaysSince(START_DATE);
 
+  // 更新進度條
   let progress = HOLDINGS_KAS / KAS_GOAL * 100;
   if (progress > 100) progress = 100;
-  progress = progress.toFixed(6);
-  document.getElementById('progressPercent').textContent = progress + "%";
+  
+  document.getElementById('progressPercent').textContent = progress.toFixed(4) + "%";
   document.getElementById('progressBar').style.width = progress + "%";
 
-  document.getElementById('KASTotal').textContent = HOLDINGS_KAS.toFixed(8);
+  // 更新總資產文字
+  document.getElementById('KASTotal').textContent = HOLDINGS_KAS.toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 8
+  });
 }
 
-async function updateBalanceAndPage() {
+// 主程式進入點
+async function init() {
   await fetchKaspaBalance();
   updatePage();
+  fetchKaspaHistory();
 }
 
-// Initial update
-updateBalanceAndPage();
+// 啟動
+init();
 
-// Update every 30 minutes (30 * 60 * 1000 milliseconds)
-setInterval(updateBalanceAndPage, 30 * 60 * 1000);
+// 排程更新
+setInterval(async () => {
+  await fetchKaspaBalance();
+  fetchKaspaHistory();
+  updatePage();
+}, 10 * 60 * 1000);
 
-// Also update the display every hour for day counter
-
-setInterval(updatePage, 1000 * 60 * 60);
-
+setInterval(() => {
+  document.getElementById('dayText').textContent = "DAY " + getDaysSince(START_DATE);
+}, 60 * 60 * 1000);
