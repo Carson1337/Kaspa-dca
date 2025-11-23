@@ -214,8 +214,17 @@ body {
   font-size: 12px;
 }
 
-.history-amount {
-  color: #70c464;
+/* 存入 (綠色) */
+.history-amount { 
+  color: #70c464; 
+  font-family: monospace;
+  font-weight: bold;
+  letter-spacing: -0.5px;
+}
+
+/* 提走 (紅色/橘紅色) */
+.history-withdrawal {
+  color: #f86969; 
   font-family: monospace;
   font-weight: bold;
   letter-spacing: -0.5px;
@@ -228,7 +237,7 @@ body {
   padding: 10px;
 }
 
-/* --- 底部按鈕 (等寬置中) - 修正 Z-index 確保可點擊 --- */
+/* --- 底部按鈕 (等寬置中) --- */
 .links-container {
   display: flex;
   justify-content: space-between;
@@ -236,8 +245,8 @@ body {
   gap: 16px;             
   width: 100%;
   margin-top: 24px;
-  position: relative;    /* 建立新的堆疊上下文 */
-  z-index: 10;           /* 確保在一般元素之上 */
+  position: relative;    
+  z-index: 10;           
 }
 
 .kaspa-pool {
@@ -259,8 +268,8 @@ body {
   box-shadow: 0 4px 10px rgba(0,0,0,0.2);
   transition: all 0.2s ease;
 
-  position: relative;    /* 修正點擊問題的關鍵設定 */
-  z-index: 20;           /* 讓按鈕在最上層 */
+  position: relative;    
+  z-index: 20;           
 }
 
 .kaspa-pool:hover {
