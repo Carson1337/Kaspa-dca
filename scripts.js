@@ -47,7 +47,6 @@ async function fetchKaspaBalance() {
     
   } catch (error) {
     console.error('Error fetching balance:', error);
-    // 這裡我們只返回當前值，不再使用複雜且可能失效的備用 API。
     return HOLDINGS_KAS; 
   }
 }
@@ -74,8 +73,8 @@ async function fetchKaspaHistory() {
         continue;
       }
 
-      let inputAmount = 0;
-      let outputAmount = 0;
+      let inputAmount = 0; // 從錢包地址付出的 Sompi
+      let outputAmount = 0; // 存入錢包地址的 Sompi
 
       // 計算這筆交易中，我付出的金額
       if (tx.inputs) {
@@ -95,7 +94,7 @@ async function fetchKaspaHistory() {
         }
       }
 
-      // 淨變化量 (收到 - 付出)
+      // 計算淨變化量 (收到 - 付出)。這包含了交易費的影響。
       const netChangeSompi = outputAmount - inputAmount;
       const netKas = netChangeSompi / 100000000;
 
@@ -103,10 +102,15 @@ async function fetchKaspaHistory() {
 
       // 2. 只紀錄淨變化量超過 0.01 KAS 的交易
       if (absNetKas > 0.01) {
-         const type = (netKas > 0) ? 'deposit' : 'withdrawal'; // netKas > 0 為存入，netKas < 0 為提走
+         // netKas > 0: 收到 > 付出 (存入/挖礦收入)
+         // netKas < 0: 收到 < 付出 (提走/發送)
+         const type = (netKas > 0) ? 'deposit' : 'withdrawal';
+         
+         // 如果是提走，我們取付出的總額 (inputAmount) 來顯示提走多少，
+         // 但因為 Kaspa 的交易複雜性，用 netKas 的絕對值來呈現淨支出是最準確且容易理解的。
          transactions.push({
            time: tx.block_time,
-           amount: absNetKas, // 使用絕對值
+           amount: absNetKas, 
            type: type
          });
       }
@@ -155,6 +159,11 @@ function updatePage() {
 }
 
 async function init() {
+  // 由於你的 index.html 缺少歷史紀錄容器，這裡先確認是否已載入新版 HTML/CSS
+  if (!document.getElementById('historyList')) {
+     console.warn("historyList element not found. Please ensure you are using the latest index.html file.");
+  }
+  
   await fetchKaspaBalance();
   updatePage();
   fetchKaspaHistory(); // 載入交易紀錄
