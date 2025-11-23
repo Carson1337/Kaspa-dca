@@ -58,17 +58,16 @@ async function fetchKaspaHistory() {
 
   try {
     console.log('Fetching history...');
-    // 取得最近 50 筆完整交易資訊
     const apiUrl = `https://api.kaspa.org/addresses/${KASPA_WALLET_ADDRESS}/full-transactions?limit=50`;
     const response = await fetch(apiUrl);
     
     if (!response.ok) throw new Error('API Error');
     const data = await response.json();
 
-    const deposits = [];
+    const transactions = []; // 儲存所有存入與提走交易
 
     for (const tx of data) {
-      // 1. 時間過濾：如果這筆交易早於 2025/11/01，直接跳過
+      // 1. 時間過濾
       if (tx.block_time < SHOW_HISTORY_FROM) {
         continue;
       }
@@ -94,32 +93,38 @@ async function fetchKaspaHistory() {
         }
       }
 
-      // 淨變化量
+      // 淨變化量 (收到 - 付出)
       const netChangeSompi = outputAmount - inputAmount;
       const netKas = netChangeSompi / 100000000;
 
-      // 只顯示收入 (大於 0.01 KAS)
-      if (netKas > 0.01) {
-         deposits.push({
+      const absNetKas = Math.abs(netKas);
+
+      // 2. 只紀錄淨變化量超過 0.01 KAS 的交易
+      if (absNetKas > 0.01) {
+         const type = (netKas > 0) ? 'deposit' : 'withdrawal'; // 判斷交易類型
+         transactions.push({
            time: tx.block_time,
-           amount: netKas
+           amount: absNetKas, // 使用絕對值
+           type: type
          });
       }
     }
 
-    if (deposits.length === 0) {
-      // 為了怕使用者以為壞掉，如果過濾完沒東西，提示一下
-      listElement.innerHTML = '<div class="history-loading">11月後尚無存入紀錄</div>';
+    if (transactions.length === 0) {
+      listElement.innerHTML = '<div class="history-loading">11月後尚無交易紀錄</div>';
       return;
     }
 
-    // 生成 HTML
+    // 3. 生成 HTML
     let historyHtml = '';
-    deposits.forEach(record => {
+    transactions.forEach(record => {
+      const sign = record.type === 'deposit' ? '+' : '-';
+      const cssClass = record.type === 'deposit' ? 'history-amount' : 'history-withdrawal'; 
+      
       historyHtml += `
         <div class="history-item">
           <span class="history-date">${formatTime(record.time)}</span>
-          <span class="history-amount">+ ${record.amount.toFixed(2)} KAS</span>
+          <span class="${cssClass}">${sign} ${record.amount.toFixed(2)} KAS</span>
         </div>
       `;
     });
@@ -133,34 +138,28 @@ async function fetchKaspaHistory() {
 }
 
 function updatePage() {
-  // 更新天數
   document.getElementById('dayText').textContent = "DAY " + getDaysSince(START_DATE);
 
-  // 更新進度條
   let progress = HOLDINGS_KAS / KAS_GOAL * 100;
   if (progress > 100) progress = 100;
   
   document.getElementById('progressPercent').textContent = progress.toFixed(4) + "%";
   document.getElementById('progressBar').style.width = progress + "%";
 
-  // 更新總資產文字
   document.getElementById('KASTotal').textContent = HOLDINGS_KAS.toLocaleString('en-US', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 8
   });
 }
 
-// 主程式進入點
 async function init() {
   await fetchKaspaBalance();
   updatePage();
   fetchKaspaHistory();
 }
 
-// 啟動
 init();
 
-// 排程更新
 setInterval(async () => {
   await fetchKaspaBalance();
   fetchKaspaHistory();
