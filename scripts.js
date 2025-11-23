@@ -47,11 +47,12 @@ async function fetchKaspaBalance() {
     
   } catch (error) {
     console.error('Error fetching balance:', error);
+    // 這裡可以加上備用 API 查詢邏輯（如你舊檔所示）
     return HOLDINGS_KAS;
   }
 }
 
-// 查詢並顯示歷史紀錄
+// 查詢並顯示歷史紀錄 (包含存入和提走)
 async function fetchKaspaHistory() {
   const listElement = document.getElementById('historyList');
   if (!listElement) return;
@@ -64,7 +65,7 @@ async function fetchKaspaHistory() {
     if (!response.ok) throw new Error('API Error');
     const data = await response.json();
 
-    const transactions = []; // 儲存所有存入與提走交易
+    const transactions = []; 
 
     for (const tx of data) {
       // 1. 時間過濾
@@ -101,7 +102,7 @@ async function fetchKaspaHistory() {
 
       // 2. 只紀錄淨變化量超過 0.01 KAS 的交易
       if (absNetKas > 0.01) {
-         const type = (netKas > 0) ? 'deposit' : 'withdrawal'; // 判斷交易類型
+         const type = (netKas > 0) ? 'deposit' : 'withdrawal'; // netKas > 0 為存入，netKas < 0 為提走
          transactions.push({
            time: tx.block_time,
            amount: absNetKas, // 使用絕對值
@@ -143,7 +144,8 @@ function updatePage() {
   let progress = HOLDINGS_KAS / KAS_GOAL * 100;
   if (progress > 100) progress = 100;
   
-  document.getElementById('progressPercent').textContent = progress.toFixed(4) + "%";
+  // 修正：使用 toFixed(4) 來顯示百分比
+  document.getElementById('progressPercent').textContent = progress.toFixed(4) + "%"; 
   document.getElementById('progressBar').style.width = progress + "%";
 
   document.getElementById('KASTotal').textContent = HOLDINGS_KAS.toLocaleString('en-US', {
@@ -160,12 +162,14 @@ async function init() {
 
 init();
 
+// 每 10 分鐘更新餘額和紀錄
 setInterval(async () => {
   await fetchKaspaBalance();
   fetchKaspaHistory();
   updatePage();
 }, 10 * 60 * 1000);
 
+// 每小時更新天數
 setInterval(() => {
   document.getElementById('dayText').textContent = "DAY " + getDaysSince(START_DATE);
 }, 60 * 60 * 1000);
