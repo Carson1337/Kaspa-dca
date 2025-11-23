@@ -4,7 +4,7 @@ const KAS_GOAL = 100000;
 const KASPA_WALLET_ADDRESS = 'kaspa:qypqn40xz56apfhc3rf26u8gg0r36n2jzjs0gezyz9ujsnxxc9au8sgd78njpg7';
 
 // --- 設定：只顯示這個日期之後的紀錄 (2025-11-01) ---
-const SHOW_HISTORY_FROM = new Date('2025-11-01T00:00:00').getTime();
+const SHOW_HISTORY_FROM = new Date('2025-11-24T00:00:00').getTime();
 
 function getTaipeiDate() {
   const now = new Date();
