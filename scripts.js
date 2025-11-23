@@ -47,8 +47,8 @@ async function fetchKaspaBalance() {
     
   } catch (error) {
     console.error('Error fetching balance:', error);
-    // 這裡省略了舊版中的備用 API 查詢，因為它會使代碼過於複雜且容易出錯。
-    return HOLDINGS_KAS;
+    // 這裡我們只返回當前值，不再使用複雜且可能失效的備用 API。
+    return HOLDINGS_KAS; 
   }
 }
 
@@ -59,6 +59,7 @@ async function fetchKaspaHistory() {
 
   try {
     console.log('Fetching history...');
+    // 使用 limit=50 確保抓取足夠的交易紀錄
     const apiUrl = `https://api.kaspa.org/addresses/${KASPA_WALLET_ADDRESS}/full-transactions?limit=50`;
     const response = await fetch(apiUrl);
     
