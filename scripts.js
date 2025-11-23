@@ -47,7 +47,7 @@ async function fetchKaspaBalance() {
     
   } catch (error) {
     console.error('Error fetching balance:', error);
-    // 這裡可以加上備用 API 查詢邏輯（如你舊檔所示）
+    // 這裡省略了舊版中的備用 API 查詢，因為它會使代碼過於複雜且容易出錯。
     return HOLDINGS_KAS;
   }
 }
@@ -144,8 +144,7 @@ function updatePage() {
   let progress = HOLDINGS_KAS / KAS_GOAL * 100;
   if (progress > 100) progress = 100;
   
-  // 修正：使用 toFixed(4) 來顯示百分比
-  document.getElementById('progressPercent').textContent = progress.toFixed(4) + "%"; 
+  document.getElementById('progressPercent').textContent = progress.toFixed(4) + "%";
   document.getElementById('progressBar').style.width = progress + "%";
 
   document.getElementById('KASTotal').textContent = HOLDINGS_KAS.toLocaleString('en-US', {
@@ -157,7 +156,7 @@ function updatePage() {
 async function init() {
   await fetchKaspaBalance();
   updatePage();
-  fetchKaspaHistory();
+  fetchKaspaHistory(); // 載入交易紀錄
 }
 
 init();
